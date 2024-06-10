@@ -1,20 +1,39 @@
 import typing
+from typing import Self
 
 import kubernetes
 from httpcore import SOCKET_OPTION, ConnectionPool, NetworkBackend, NetworkStream
 from httpcore._backends.sync import SyncStream
-from httpx import Client, HTTPTransport, Limits, create_ssl_context
+from httpx import HTTPTransport, Limits, create_ssl_context
 from httpx._config import DEFAULT_LIMITS
 from httpx._types import CertTypes, ProxyTypes, VerifyTypes
-from kubernetes import config
 from kubernetes.stream import portforward
 from kubernetes.stream.ws_client import PortForward
+from pydantic import BaseModel, PrivateAttr, ValidationInfo, model_validator
+
+
+class NamedResource(BaseModel):
+    _name: str = PrivateAttr()
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    _namespace: str = PrivateAttr()
+
+    @property
+    def namespace(self) -> str:
+        return self._namespace
+
+    @model_validator(mode="after")
+    def set_name_and_namespace(self, validation_info: ValidationInfo) -> Self:
+        self._name = validation_info.context["name"]
+        self._namespace = validation_info.context["namespace"]
+        return self
 
 
 class KubernetesPortForwardBackend(NetworkBackend):
     def __init__(self) -> None:
-        config.load_kube_config()
-
         self._api = kubernetes.client.CoreV1Api()
 
     def connect_tcp(
@@ -111,15 +130,3 @@ class KubernetesPortForwardTransport(HTTPTransport):
             socket_options=socket_options,
             network_backend=KubernetesPortForwardBackend(),
         )
-
-
-def main():
-    config.load_kube_config()
-
-    with Client(transport=KubernetesPortForwardTransport()) as client:
-        response = client.get("http://my-server.pod-pg.svc:4200/api/health")
-        print(response)
-
-
-if __name__ == "__main__":
-    main()
