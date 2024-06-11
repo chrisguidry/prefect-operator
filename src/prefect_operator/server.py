@@ -105,7 +105,7 @@ class PrefectServer(NamedResource):
             "ports": [{"containerPort": 4200}],
             "readinessProbe": {
                 "httpGet": {"path": "/api/health", "port": 4200, "scheme": "HTTP"},
-                "initialDelaySeconds": 10,
+                "initialDelaySeconds": 5,
                 "periodSeconds": 5,
                 "timeoutSeconds": 5,
                 "successThreshold": 1,
@@ -113,7 +113,7 @@ class PrefectServer(NamedResource):
             },
             "livenessProbe": {
                 "httpGet": {"path": "/api/health", "port": 4200, "scheme": "HTTP"},
-                "initialDelaySeconds": 120,
+                "initialDelaySeconds": 90,
                 "periodSeconds": 10,
                 "timeoutSeconds": 5,
                 "successThreshold": 1,
